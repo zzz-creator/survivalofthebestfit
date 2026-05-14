@@ -2,7 +2,7 @@ name: Deploy React to GitHub Pages
 
 on:
   push:
-    branches: [main] # Adjusted from 'master' to 'main' to match your trigger
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -25,14 +25,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Or your preferred version
+          node-version: '20'
+          # Point this to one of your subdirectories that has a package-lock.json
           cache: 'npm'
+          cache-dependency-path: './website-source/package-lock.json'
 
-      # --- LOGIC MATCHING: Pre-deployment checks ---
       - name: Validate Production Settings
         run: |
           if ! grep -Fq "debugMode = false" game-source/public/game/controllers/game/mlLabNarrator.js; then
-            echo "Error: debugMode is not set to false in mlLabNarrator.js"
+            echo "Error: debugMode is not set to false"
             exit 1
           fi
           if ! grep -q "^\s*this.transition('titleStage');" game-source/public/game/controllers/game/stateManager.js; then
@@ -40,23 +41,26 @@ jobs:
             exit 1
           fi
 
-      # --- LOGIC MATCHING: Multi-project build ---
-      - name: Build Website
+      - name: Install and Build Website
+        working-directory: ./website-source
         run: |
-          cd website-source
-          npm ci
-          npm run build
-          
-      - name: Build Game
-        run: |
-          cd game-source
           npm ci
           npm run build
 
-      # --- LOGIC MATCHING: Artifact Preparation ---
-      # Your script suggests the final files live in a root /dist folder 
-      # after both builds run. If they build into their own folders, 
-      # you may need to move them into one place here.
+      - name: Install and Build Game
+        working-directory: ./game-source
+        run: |
+          npm ci
+          npm run build
+
+      # Crucial Step: Your script suggests you want everything in a root 'dist' folder
+      - name: Prepare Final Dist
+        run: |
+          mkdir -p dist
+          # Adjust these paths based on where your 'npm run build' actually outputs files
+          cp -r website-source/dist/* dist/ || true
+          cp -r game-source/dist/* dist/ || true
+
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
