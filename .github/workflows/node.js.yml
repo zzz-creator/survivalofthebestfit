@@ -43,14 +43,14 @@ jobs:
 
       - name: Install and Build Website
         working-directory: ./website-source
-        run: |
-          npm ci
+        run: | #Temporary solution. Change to npm ci
+          npm install 
           npm run build
 
       - name: Install and Build Game
         working-directory: ./game-source
-        run: |
-          npm ci
+        run: |  #Temporary solution. Change to npm ci
+          npm install
           npm run build
 
       # Crucial Step: Your script suggests you want everything in a root 'dist' folder
